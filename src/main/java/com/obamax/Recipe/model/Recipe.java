@@ -1,24 +1,24 @@
 package com.obamax.Recipe.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.*;
+import org.hibernate.Hibernate;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
-import javax.validation.constraints.Size;
-import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
+@Getter
+@Setter
+@ToString
+@RequiredArgsConstructor
 @Entity
 @Table(name="recipe")
-public class Recipe implements Serializable {
+public class Recipe {
     @JsonIgnore
     @Id
     @GeneratedValue
@@ -28,16 +28,35 @@ public class Recipe implements Serializable {
     @NotBlank
     private String name;
 
+    @NotBlank
+    private String category;
+
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private String date;
+
     @NotNull
     @NotBlank
     private String description;
 
     @ElementCollection
-    @Size(min = 1)
-    private List<String> ingredients = new ArrayList<>();
+    @NotEmpty
+    private List<String> ingredients;
 
     @ElementCollection
-    @Size(min = 1)
-    private List<String> directions = new ArrayList<>();
+    @NotEmpty
+    private List<String> directions;
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || Hibernate.getClass(this) != Hibernate.getClass(o)) return false;
+        Recipe recipe = (Recipe) o;
+
+        return Objects.equals(id, recipe.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return 1629938687;
+    }
 }

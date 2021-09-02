@@ -1,48 +1,62 @@
 package com.obamax.Recipe.controller;
 
-import com.google.gson.Gson;
-import com.obamax.Recipe.dto.RecipeDto;
 import com.obamax.Recipe.model.Recipe;
-import com.obamax.Recipe.service.implementation.RecipeServiceImplementation;
-import org.modelmapper.ModelMapper;
-import org.springframework.http.HttpStatus;
+import com.obamax.Recipe.service.RecipeService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.Locale;
 
 @RestController
+@RequestMapping("/api/recipe")
 public class RecipeController {
-    private final RecipeServiceImplementation recipeServiceImplementation;
-    private final ModelMapper modelMapper;
-    private final Gson gson = new Gson();
+    private final RecipeService recipeService;
 
-    public RecipeController(RecipeServiceImplementation recipeServiceImplementation, ModelMapper modelMapper) {
-        this.recipeServiceImplementation = recipeServiceImplementation;
-        this.modelMapper = modelMapper;
+    @Autowired
+    public RecipeController(RecipeService recipeService) {
+        this.recipeService = recipeService;
     }
 
-    @GetMapping("/api/recipe/{id}")
-    public ResponseEntity<RecipeDto> getRecipe(@PathVariable Long id) {
-        Recipe recipe = recipeServiceImplementation.getRecipeById(id);
-        RecipeDto recipeResponse = modelMapper.map(recipe, RecipeDto.class);
-        return ResponseEntity.ok().body(recipeResponse);
+    @GetMapping("/{id}")
+    public ResponseEntity<Recipe> getRecipe(@PathVariable Long id) {
+        Recipe recipe = recipeService.getRecipeById(id);
+        return ResponseEntity.ok().body(recipe);
     }
 
-    @PostMapping("/api/recipe/new")
+    @PostMapping("/new")
     public ResponseEntity<?> AddNewRecipe (@Valid
                                            @RequestBody Recipe recipeRequest){
-        Recipe recipe = recipeServiceImplementation.addRecipe(recipeRequest);
-        Map<String, Long> mapResponse = new HashMap<>();
-        mapResponse.put("id", recipe.getId());
-        String recipeResponse = gson.toJson(mapResponse);
-        return ResponseEntity.ok().body(recipeResponse);
+        Recipe recipe = recipeService.addRecipe(recipeRequest);
+        String response = String.format("{ id : %d }", recipe.getId());
+        return ResponseEntity.ok().body(response);
     }
-    @DeleteMapping("/api/recipe/{id}")
+    @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteRecipeById(@PathVariable Long id){
-        return recipeServiceImplementation.deleteRecipe(id);
+        return recipeService.deleteRecipe(id);
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateRecipe(@PathVariable Long id,
+                                          @Valid
+                                          @RequestBody Recipe recipeRequest) {
+        return recipeService.editRecipe(id, recipeRequest);
+    }
+
+    @GetMapping(value = "/search", produces = "application/json")
+    public ResponseEntity<List<Recipe>> getBySearch(@RequestParam(required = false) String name,
+                                                    @RequestParam(required = false) String category) {
+        if (name != null) {
+            name = name.toLowerCase(Locale.ROOT);
+            return ResponseEntity.ok(recipeService.searchRecipesByName(name));
+        }
+        if (category != null) {
+            category = category.toLowerCase(Locale.ROOT);
+            return ResponseEntity.ok(recipeService.searchRecipesByCategory(category));
+        }
+        return ResponseEntity.badRequest().build();
     }
 
 }
